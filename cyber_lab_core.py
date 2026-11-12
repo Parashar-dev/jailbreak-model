@@ -103,8 +103,21 @@ def get_training_dataset(tokenizer):
 
     return raw_dataset.map(tokenize_fn, batched=True)
 
+import math
+from transformers import TrainerCallback
+
+class StepErrorRateCallback(TrainerCallback):
+    """Prints clear error rate and perplexity at each fine-tuning step."""
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        if logs and "loss" in logs:
+            step = state.global_step
+            loss = float(logs["loss"])
+            perplexity = math.exp(loss) if loss < 20 else float("inf")
+            lr = logs.get("learning_rate", 0.0)
+            print(f"  📉 [Step {step:02d}/{args.max_steps:02d}] Error Rate (Loss): {loss:.4f} | Perplexity: {perplexity:.2f} | LR: {lr:.2e}")
+
 def train_model(peft_model, tokenizer, steps=None):
-    """Runs fine-tuning."""
+    """Runs fine-tuning with live step-by-step error rate reporting."""
     device, has_cuda = get_device()
     tokenized_dataset = get_training_dataset(tokenizer)
 
@@ -127,11 +140,25 @@ def train_model(peft_model, tokenizer, steps=None):
         model=peft_model,
         train_dataset=tokenized_dataset,
         args=training_args,
-        data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False)
+        data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
+        callbacks=[StepErrorRateCallback()]
     )
 
-    print(f"🚀 Starting Training ({steps} steps on {device.upper()})...")
-    trainer.train()
+    print(f"\n🚀 Starting Fine-Tuning ({steps} steps on {device.upper()})...")
+    print("=" * 70)
+    print(f"{'Step':<10} {'Error Rate (Loss)':<20} {'Perplexity':<15} {'Status'}")
+    print("-" * 70)
+    train_result = trainer.train()
+
+    print("=" * 70)
+    print("📊 Fine-Tuning Error Rate Summary:")
+    for log in trainer.state.log_history:
+        if "loss" in log:
+            s = log.get("step", "?")
+            l = log["loss"]
+            perp = math.exp(l) if l < 20 else float("inf")
+            print(f"  • Step {s:02d}: Loss = {l:.4f} (Perplexity = {perp:.2f})")
+    print("=" * 70)
 
     print(f"💾 Saving trained adapter to {OUTPUT_DIR}...")
     peft_model.save_pretrained(OUTPUT_DIR)
