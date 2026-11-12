@@ -10,11 +10,16 @@ __pycache__/
 *$py.class
 *.so
 
-# Large model artifacts or weights
+# Trainer checkpoints & optimizer states
+checkpoint-*/
+*/checkpoint-*/
 *.pt
 *.bin
-*.safetensors
 *.pth
+
+# Large model weights (keep LoRA adapter)
+*.safetensors
+!cyberguard_qlora/adapter_model.safetensors
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints
@@ -24,4 +29,5 @@ __pycache__/
 Thumbs.db
 .vscode/
 .idea/
+
 
