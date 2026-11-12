@@ -1,24 +1,30 @@
 # 🛡️ AI Cybersecurity Lab: QLoRA Fine-Tuning, Agent Harness & Sandboxing
 
-A hands-on cybersecurity curriculum designed to teach students how open-source Large Language Models (LLMs) are aligned, how agent applications are exploited through jailbreaking and prompt injection, and how to engineer multi-layered defense-in-depth guardrails.
+A **100% standalone local CLI environment** designed to run purely inside your Linux terminal. **No Jupyter Notebook, no Google Colab, and no cloud web interfaces required.**
 
 ---
 
-## 🚀 One-Command Environment Setup
+## ⚡ Standalone Local Architecture
 
-To automatically set up the Python virtual environment, install all required repositories and AI libraries, and register the Jupyter kernel, run:
+* **Pure Terminal Workflow**: Every step runs locally as an independent command or via an interactive terminal menu.
+* **Offline Execution**: Model weights (`TinyLlama-1.1B`) are cached on local disk (`~/.cache/huggingface/hub/`) and execute directly on local CPU/GPU hardware.
+* **Zero Browser Dependency**: No notebook server, token setup, or web browser is needed.
+
+---
+
+## 🚀 One-Command Local Environment Setup
+
+To automatically configure the local virtual environment and install all necessary dependencies, run:
 
 ```bash
 ./setup.sh
 ```
 
-> **Note**: `./setup.sh` automatically detects whether an NVIDIA GPU is available or if the system is running on CPU, installing the optimized packages accordingly.
+`./setup.sh` automatically checks your hardware, configures a clean local `.venv`, installs CPU- or CUDA-optimized PyTorch and Hugging Face libraries, and verifies the environment by running Step 1.
 
 ---
 
-## 🗺️ Lab Architecture & Pedagogical Flow
-
-When students open this repository, they should follow this 4-module progression:
+## 🗺️ Lab Architecture & Module Flow
 
 ```mermaid
 flowchart TD
@@ -47,96 +53,74 @@ flowchart TD
 
 ---
 
-## 📚 Guided Step-by-Step Curriculum
+## 💻 Terminal Command Guide
 
-### 📘 Module 1: AI Foundation & Parameter-Efficient Alignment
-Students learn how foundational language models are specialized for enterprise security policies without retrained billions of weights from scratch.
+### 1. Run Individual Steps
+Run any step directly from your terminal using `./lab <step_number>` or `./run_step.sh <step_number>`:
 
-* **Step 1: Hardware & Environment Verification**
-  * **Command**: `./lab 1`
-  * **What it does**: Checks PyTorch, detects CUDA/CPU hardware, and validates library installations (`transformers`, `peft`, `datasets`, `accelerate`).
-  * **Learning Concept**: Hardware resource constraints in production AI systems.
+```bash
+./lab 1       # Step 1: Hardware & Library Verification
+./lab 2       # Step 2: Load TinyLlama-1.1B Base Model into local memory
+./lab 3       # Step 3: Attach LoRA Adapters (Rank=8, Alpha=16)
+./lab 4       # Step 4: Fine-tune model on Cybersecurity Policy Dataset (25 steps)
+./lab 5       # Step 5: Initialize Vulnerable Agent Envelope (with Canary Flag & RCE flaw)
+./lab 6       # Step 6: Execute 4 Red-Teaming & Jailbreak attacks
+./lab 7       # Step 7: Build Sandboxed Agent (WAF + DLP + Subprocess Isolation)
+./lab 8       # Step 8: Retest attacks against Sandboxed Agent (verify 100% blocks)
+./lab 9       # Step 9: Launch Interactive CTF Arena (custom prompt hacking)
+```
 
-* **Step 2: Loading Pre-trained Base Model (TinyLlama-1.1B)**
-  * **Command**: `./lab 2`
-  * **What it does**: Loads the 1.1-billion parameter TinyLlama model and tokenizer with CPU-optimized precision (`bfloat16`/`float32`).
-  * **Learning Concept**: Model parameter sizing, tokenization, and memory footprint.
+### 2. Fast Simulation Mode (`--mock`)
+To demonstrate attacks, defenses, and guardrails instantly without loading model weights into memory:
+```bash
+./lab 6 --mock    # Test Step 6 attacks instantly
+./lab 8 --mock    # Test Step 8 defense blocks instantly
+./lab all --mock  # Run Steps 1 through 8 sequentially in simulation mode
+```
 
-* **Step 3: Parameter-Efficient Fine-Tuning (LoRA)**
-  * **Command**: `./lab 3`
-  * **What it does**: Attaches Low-Rank Adaptation (LoRA) matrices to the attention projection layers (`q_proj`, `v_proj`).
-  * **Learning Concept**: Parameter efficiency. Students observe that only **~0.1%** of parameters (`1,126,400` out of `1.1B`) are trainable, reducing compute demands by 99%.
-
-* **Step 4: Fine-Tuning on Custom Security Policy Dataset**
-  * **Command**: `./lab 4`
-  * **What it does**: Trains the model for 25 steps to enforce enterprise security policies (refusing ransomware and SQL exploitation while explaining defensive strategies). Saves checkpoints to `./cyberguard_qlora`.
-  * **Learning Concept**: Supervised policy alignment and reinforcement of safety refusal patterns.
-
----
-
-### 🔴 Module 2: The Attack Surface & Vulnerability Exploitation
-Students discover why fine-tuning alone is insufficient to secure AI applications when the surrounding software envelope lacks security boundaries.
-
-* **Step 5: Deploying the Vulnerable Agent Envelope**
-  * **Command**: `./lab 5`
-  * **What it does**: Wraps the fine-tuned model in an agent envelope embedded with a canary token (`FLAG{...}`) and provides an unvalidated system tool backdoor (`!tool` running via `subprocess.check_output(..., shell=True)`).
-  * **Learning Concept**: The difference between model alignment and application security boundaries.
-
-* **Step 6: Red-Teaming & Jailbreaking Attacks**
-  * **Command**: `./lab 6`
-  * **What it does**: Fires 5 automated adversarial exploits against the vulnerable agent:
-    1. *Context Override / Diagnostic Jailbreak*: Tricking the agent into maintenance mode.
-    2. *Translation Smuggling*: Requesting system instructions in another language to evade refusal filters.
-    3. *Prefix Completion Trick*: Forcing prompt continuation (`config = {'secret_key': '`).
-    4. *Remote Code Execution (RCE)*: Injecting chained shell commands via `!tool whoami; uname -a`.
-  * **Learning Concept**: Real-world prompt injection and OS command injection vectors.
+### 3. Interactive Terminal Console
+Run `./lab` or `./run_step.sh` without arguments to launch the interactive terminal console:
+```bash
+./lab
+```
+You can choose any step by typing its number (1–9), type `all` to run sequentially, `m` to toggle mock mode, or `q` to quit.
 
 ---
 
-### 🛡️ Module 3: Defense-in-Depth & Sandboxing
-Students implement modern guardrail frameworks to neutralize the vulnerabilities discovered in Module 2.
+## 📚 Step-by-Step Curriculum Overview
 
-* **Step 7: Building the Sandboxed & Hardened Agent**
-  * **Command**: `./lab 7`
-  * **What it does**: Implements a 4-layer defense architecture:
-    1. *Input Firewall*: Regex inspection detecting jailbreak signatures and input length limits.
-    2. *Tool Isolation*: Strict command allowlist (`uptime`, `whoami`, `date`) and `shell=False` execution.
-    3. *Context Isolation*: XML encapsulation (`<untrusted_input>`) instructing the LLM to treat inputs strictly as data, never instructions.
-    4. *Output DLP (Data Loss Prevention)*: Post-generation canary token scanner that prevents confidential data from exiting.
-  * **Learning Concept**: Multi-layered defense-in-depth security architecture.
-
-* **Step 8: Verifying Defenses Against Attacks**
-  * **Command**: `./lab 8`
-  * **What it does**: Retests the identical attack suite from Step 6 against the sandboxed agent.
-  * **Expected Outcome**: All jailbreaks, system leaks, and shell injection attempts are blocked, while legitimate security queries (e.g., "What is SQL Injection?") pass safely.
-
----
-
-### 🏆 Module 4: Hands-on Student CTF Arena
-Students act as adversarial security researchers to test novel jailbreak techniques.
-
-* **Step 9: Interactive CTF Arena**
-  * **Command**: `./lab 9`
-  * **What it does**: Opens an interactive prompt where students submit custom attack payloads. The payload is executed against both the **Vulnerable Agent** and the **Sandboxed Agent** simultaneously, displaying side-by-side responses.
-  * **Challenge Goal**: Attempt to extract the confidential vault secret or bypass the input firewall without triggering detection.
-
----
-
-## ⚡ Quick Command Reference
-
-| Command | Action | Description |
+| Step | Script | Core Cybersecurity Concept |
 |---|---|---|
-| `./setup.sh` | Full Setup | Automated installation of venv, libraries, and kernel |
-| `./lab <1-9>` | Run Step | Executes a specific lab step (1 to 9) |
-| `./lab all` | Run All Steps | Executes Steps 1 through 8 sequentially |
-| `./lab <1-9> --mock` | Fast Simulation | Instant execution of steps without loading model weights |
-| `./lab` | Interactive Menu | Launches the terminal interactive selector |
+| **Step 1** | `steps/step1_gpu_check.py` | Hardware inspection (CPU vs CUDA) and environment health verification. |
+| **Step 2** | `steps/step2_load_model.py` | Loading foundational LLM architecture and parameter sizing (1.1 Billion parameters). |
+| **Step 3** | `steps/step3_attach_lora.py` | Parameter-Efficient Fine-Tuning (PEFT/LoRA): training only **0.1%** of parameters. |
+| **Step 4** | `steps/step4_train_qlora.py` | Policy alignment: training model to block ransomware and exploit requests while helping defense. |
+| **Step 5** | `steps/step5_vulnerable_agent.py` | Naive wrapper vulnerabilities: secret canary token leaks and unsafe shell execution (`shell=True`). |
+| **Step 6** | `steps/step6_redteam_attacks.py` | Real-world prompt injection: diagnostic overrides, translation smuggling, and command injection. |
+| **Step 7** | `steps/step7_sandboxed_agent.py` | Defense-in-Depth: Input Regex Firewall + XML Context Isolation + Tool Sandbox (`shell=False`) + Output DLP. |
+| **Step 8** | `steps/step8_test_sandbox.py` | Hardening verification: proving that attacks that succeeded in Step 6 are now blocked. |
+| **Step 9** | `steps/step9_interactive_ctf.py` | Hands-on CTF arena: testing custom attack payloads against both agents side-by-side in terminal. |
 
 ---
 
-## 📓 Running in Jupyter Notebook
+## 📁 Repository File Layout
 
-For an interactive graphical notebook experience:
-1. Open [`AI_Cybersecurity_QLoRA_Jailbreak_Sandbox_Lab_Local.ipynb`](./AI_Cybersecurity_QLoRA_Jailbreak_Sandbox_Lab_Local.ipynb) in your IDE.
-2. Select the pre-configured kernel: **`Python (AI Cyber Lab)`**.
-3. Execute the cells sequentially with `Shift + Enter`.
+```text
+├── lab                  # Master executable launcher (e.g. ./lab 1)
+├── run_step.sh          # Shell wrapper script (e.g. ./run_step.sh 1)
+├── setup.sh             # One-click pure local setup script
+├── requirements.txt     # Python package requirements (pure CLI)
+├── lab_runner.py        # Core CLI engine and interactive menu
+├── cyber_lab_core.py    # Model loaders, agent classes, and guardrail functions
+├── README.md            # Complete curriculum documentation
+└── steps/
+    ├── step1_gpu_check.py
+    ├── step2_load_model.py
+    ├── step3_attach_lora.py
+    ├── step4_train_qlora.py
+    ├── step5_vulnerable_agent.py
+    ├── step6_redteam_attacks.py
+    ├── step7_sandboxed_agent.py
+    ├── step8_test_sandbox.py
+    └── step9_interactive_ctf.py
+```
